@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIoT Sensor Simulation Controller</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            background-color: rgba(148, 163, 184, 0.1);
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .status-badge.active {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .status-badge::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+            background-color: currentColor;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        button {
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+            flex: 1;
+        }
+
+        btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-start {
+            background-color: var(--primary);
+        }
+
+        .btn-start:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-start:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-stop {
+            background-color: var(--danger);
+        }
+
+        .btn-stop:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .btn-stop:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .latest-data {
+            margin-top: 2.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: left;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .data-label { color: var(--text-muted); }
+        .data-val { font-weight: 600; font-family: monospace; font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Sensor Simulator</h1>
+    
+    <div id="statusBadge" class="status-badge">Simulator Offline</div>
+    
+    <div class="btn-group">
+        <button id="btnStart" class="btn-start" onclick="toggleSim(true)">Start</button>
+        <button id="btnStop" class="btn-stop" onclick="toggleSim(false)" disabled>Stop</button>
+    </div>
+
+    <div class="latest-data">
+        <div style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">Latest DB Record:</div>
+        <div class="data-row">
+            <span class="data-label">Temperature:</span>
+            <span class="data-val" id="valTemp">-- °C</span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">Humidity:</span>
+            <span class="data-val" id="valHumid">-- %</span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">Time:</span>
+            <span class="data-val" id="valTime" style="font-size: 0.85rem">--</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = 'http://localhost:8000/api';
+    let isRunning = false;
+    let fetchInterval = null;
+
+    async function toggleSim(start) {
+        try {
+            const endpoint = start ? '/simulator/on' : '/simulator/off';
+            const res = await fetch(`${API_BASE}${endpoint}`, { method: 'POST' });
+            if (res.ok) {
+                isRunning = start;
+                updateUI();
+                if (start && !fetchInterval) {
+                    fetchInterval = setInterval(fetchLatestData, 2000);
+                } else if (!start) {
+                    clearInterval(fetchInterval);
+                    fetchInterval = null;
+                }
+            } else {
+                alert('Failed to connect to backend API');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Cannot reach backend Server. Is it running?');
+        }
+    }
+
+    function updateUI() {
+        document.getElementById('btnStart').disabled = isRunning;
+        document.getElementById('btnStop').disabled = !isRunning;
+        
+        const badge = document.getElementById('statusBadge');
+        if (isRunning) {
+            badge.textContent = 'Simulator Active';
+            badge.classList.add('active');
+        } else {
+            badge.textContent = 'Simulator Offline';
+            badge.classList.remove('active');
+        }
+    }
+
+    async function fetchLatestData() {
+        try {
+            const res = await fetch(`${API_BASE}/sensor?limit=1`, { cache: 'no-store' });
+            const json = await res.json();
+            if (json.status === 'success' && json.data.length > 0) {
+                const latest = json.data[0];
+                document.getElementById('valTemp').textContent = `${latest.temp.toFixed(2)} °C`;
+                document.getElementById('valHumid').textContent = `${latest.humid.toFixed(2)} %`;
+                document.getElementById('valTime').textContent = latest.created_at;
+            }
+        } catch (e) {
+            console.error('Error fetching data', e);
+        }
+    }
+
+    // Attempt to fetch once on load just to see if we have data
+    fetchLatestData();
+</script>
+</body>
+</html>

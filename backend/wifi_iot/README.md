@@ -33,7 +33,7 @@ backend/wifi_iot/
 
 ```bash
 cd backend/wifi_iot
-uv add fastapi uvicorn
+pip install -r requirements.txt
 ```
 
 ### 2. 啟動伺服器
@@ -41,7 +41,7 @@ uv add fastapi uvicorn
 使用 Uvicorn 啟動 FastAPI 伺服器，並綁定本機與所有網卡 (`0.0.0.0`) 以允許手機熱點網路中的 ESP32 存取：
 
 ```bash
-uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 > **⚠️ 注意事項：**

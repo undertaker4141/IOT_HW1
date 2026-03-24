@@ -11,9 +11,12 @@
 ```
 d:\IOT_HW1\
 ├── .agent/              # AI 代理人 Skill 設定區 (task_logger)
-├── backend/             # 後端伺服器與資料庫測試區 (Python / uv)
+├── backend/             # 後端伺服器與資料庫測試區 (Python)
 │   ├── mock_db/         # 產生模擬 SQLite 測試資料的專案
-│   └── wifi_iot/        # 接收 ESP32 上傳真實數據的 FastAPI 伺服器
+│   └── wifi_iot/        # 接收真實或模擬數據的 FastAPI 伺服器
+├── frontend/            # 網頁控制與視覺化儀表板 (HTML/JS/Streamlit)
+│   ├── app.py           # Streamlit 即時溫濕度視覺化儀表板
+│   └── index.html       # Web 模擬器狀態控制面板
 ├── edge/                # 邊緣運算硬體專案區 (C++ / PlatformIO)
 │   ├── DHT11/           # 【測試一】單純讀取 DHT11 溫濕度並印在 Serial
 │   ├── DHT11_WIFI/      # 【正式串接】讀取 DHT11 溫濕度並透過 WiFi POST 到後端
@@ -26,7 +29,7 @@ d:\IOT_HW1\
 
 ## 🖥️ 後端專案 (Backend)
 
-後端使用現代化的 Python 工具 `uv` 建立虛擬環境與管理依賴。
+後端使用標準的 Python 工具 `pip` 建立虛擬環境與管理依賴。
 
 ### 1. `backend/mock_db` (模擬資料庫測試)
 
@@ -41,9 +44,29 @@ d:\IOT_HW1\
 - **技術棧**：Python 3.12, `FastAPI`, `Uvicorn`, `sqlite3`
 - **核心檔案**：`main.py`
 - **功能**：
-  - 提供 `/api/sensor` (POST) Endpoint，接收 JSON 格式的溫濕度數據。
+  - 提供 `/api/simulator/on` 與 `/off` 供前端網頁控制背景資料產生器。
   - 將數據寫入同目錄下的 `aiotdb.db` 資料庫 (`sensor_data` 表)。
   - 提供 `/api/sensor` (GET) Endpoint 供瀏覽器快速預覽近期數據。
+
+---
+
+## 📊 前端專案 (Frontend)
+
+為了方便在沒有硬體連線時進行系統前後端串接測試，以及即時監控數據，專案加入了前端視覺化架構。
+
+### 1. 視覺化儀表板 (`frontend/app.py`)
+
+- **用途**：透過瀏覽器即時監控溫濕度數值的變化曲線。
+- **技術棧**：Python 3.12, `Streamlit`, `Pandas`
+- **功能**：
+  - 定時循環讀取 SQLite 資料庫，繪製動態折線圖。
+  - 介面左側提供側邊欄 (Sidebar)，加入「啟動模擬器」與「停止模擬器」按鈕，讓您自由決定是否由後端產生背景虛擬數據，達成在軟硬體之間無縫切換的完整控制。
+
+### 2. 獨立控制面板 (`frontend/index.html`)
+
+- **用途**：免安裝環境的純網頁版替代控制台。
+- **技術棧**：原生 HTML, CSS, JavaScript (Fetch API)
+- **功能**：透過瀏覽器直接開啟檔案，即可連線後端 FastAPI 操控模擬器並獲取最新單筆資料。
 
 ---
 
@@ -83,16 +106,23 @@ d:\IOT_HW1\
 3. **啟動後端伺服器**：
    ```bash
    cd d:\IOT_HW1\backend\wifi_iot
-   uv sync
-   uv run uvicorn main:app --host 0.0.0.0 --port 8000
+   pip install -r requirements.txt
+   python -m uvicorn main:app --host 0.0.0.0 --port 8000
    ```
-4. **設定並燒錄 ESP32 韌體**：
+4. **啟動視覺化儀表板 (可選)**：
+   如果你想透過網頁看動態圖表或啟動軟體模擬器：
+   ```bash
+   cd d:\IOT_HW1\frontend
+   pip install -r requirements.txt
+   python -m streamlit run app.py
+   ```
+5. **設定並燒錄 ESP32 韌體 (若想測試真硬體)**：
    - 開啟 `edge/DHT11_WIFI/src/main.cpp`
    - 修改 `ssid` 為手機熱點名稱、`password` 為熱點密碼。
    - 修改 `serverUrl` 為步驟 2 拿到的 IP (如 `"http://192.168.43.x:8000/api/sensor"`)。
    - 使用 PlatformIO 進行 **Build & Upload**。
-5. **觀察結果**：
-   - ESP32 連上線後，後端的終端機與 ESP32 的 Serial Monitor 皆會同步顯示送出與接收成功的數據紀錄。
+6. **觀察結果**：
+   - ESP32 連上線後，或者您在 Streamlit 按下「Start Simulator」後，後端的終端機與前端網頁儀表板皆會同步更新最新的溫濕度！
 
 ---
 

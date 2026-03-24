@@ -1,9 +1,20 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sqlite3
 import os
+import asyncio
+import random
 
 app = FastAPI(title="AIoT WiFi Sensor Backend")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 資料庫路徑 (與此腳本同目錄下的 aiotdb.db)
 DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aiotdb.db")
@@ -29,11 +40,51 @@ def init_db():
     conn.commit()
     conn.close()
 
+simulation_active = False
+
+async def simulation_loop():
+    global simulation_active
+    while True:
+        if simulation_active:
+            temp = round(random.uniform(20.0, 35.0), 2)
+            humid = round(random.uniform(40.0, 80.0), 2)
+            try:
+                conn = sqlite3.connect(DB_FILE)
+                cursor = conn.cursor()
+                cursor.execute(
+                    "INSERT INTO sensor_data (temp, humid) VALUES (?, ?)",
+                    (temp, humid)
+                )
+                conn.commit()
+                conn.close()
+                print(f"🔄 Simulated Data Saved: Temp={temp}°C, Humid={humid}%")
+            except Exception as e:
+                print(f"❌ Simulator error: {str(e)}")
+        await asyncio.sleep(2)
+
+bg_tasks = set()
+
 @app.on_event("startup")
-def startup_event():
+async def startup_event():
     # 啟動時確保資料表存在
     init_db()
     print(f"📦 Database initialized at {DB_FILE}")
+    task = asyncio.create_task(simulation_loop())
+    bg_tasks.add(task)
+
+@app.post("/api/simulator/on")
+def start_simulator():
+    """啟動背景模擬器，每2秒產生一筆模擬溫濕度資料"""
+    global simulation_active
+    simulation_active = True
+    return {"status": "success", "message": "Simulator started"}
+
+@app.post("/api/simulator/off")
+def stop_simulator():
+    """停止背景模擬器"""
+    global simulation_active
+    simulation_active = False
+    return {"status": "success", "message": "Simulator stopped"}
 
 @app.post("/api/sensor")
 def receive_sensor_data(data: SensorData):
