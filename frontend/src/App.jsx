@@ -41,8 +41,17 @@ function App() {
       const endpoint = turnOn ? `/${feature}/on` : `/${feature}/off`;
       const res = await fetch(`${API_BASE}${endpoint}`, { method: 'POST' });
       if (res.ok) {
-        if (feature === 'simulator') setSimActive(turnOn);
-        if (feature === 'esp32') setEsp32Active(turnOn);
+        if (feature === 'simulator') {
+          setSimActive(turnOn);
+          if (turnOn) setEsp32Active(false); // Auto toggle other
+        }
+        if (feature === 'esp32') {
+          setEsp32Active(turnOn);
+          if (turnOn) setSimActive(false); // Auto toggle other
+        }
+      } else {
+        const errorData = await res.json();
+        alert(`${errorData.detail || 'Unknown error occurred'}`);
       }
     } catch (e) {
       alert(`Cannot control ${feature}. Is backend running?`);

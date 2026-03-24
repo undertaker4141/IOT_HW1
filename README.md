@@ -14,9 +14,9 @@ d:\IOT_HW1\
 ├── backend/             # 後端伺服器與資料庫測試區 (Python)
 │   ├── mock_db/         # 產生模擬 SQLite 測試資料的專案
 │   └── wifi_iot/        # 接收真實或模擬數據的 FastAPI 伺服器
-├── frontend/            # 網頁控制與視覺化儀表板 (HTML/JS/Streamlit)
-│   ├── app.py           # Streamlit 即時溫濕度視覺化儀表板
-│   └── index.html       # Web 模擬器狀態控制面板
+├── frontend/            # 網頁控制與視覺化儀表板 (React + Vite)
+│   ├── src/             # React 組件與主程式邏輯
+│   └── package.json     # Node.js 依賴設定檔
 ├── edge/                # 邊緣運算硬體專案區 (C++ / PlatformIO)
 │   ├── DHT11/           # 【測試一】單純讀取 DHT11 溫濕度並印在 Serial
 │   ├── DHT11_WIFI/      # 【正式串接】讀取 DHT11 溫濕度並透過 WiFi POST 到後端
@@ -52,19 +52,16 @@ d:\IOT_HW1\
 
 ## 📊 前端專案 (Frontend)
 
-為了方便在沒有硬體連線時進行系統前後端串接測試，以及即時監控數據，專案加入了前端視覺化架構。
+為了方便在沒有硬體連線時進行系統前後端串接測試，以及即時監控數據，專案全面採用了現代化的 Frontend 框架進行了重構。
 
-### 1. 視覺化儀表板 (`frontend/app.py`)
+### 1. 溫濕度即時監控儀表板 (React + Vite)
 
-- **用途**：透過瀏覽器即時監控溫濕度數值的變化曲線。
-- **技術棧**：Python 3.12, `Streamlit`, `Pandas`
+- **用途**：透過瀏覽器即時監控溫濕度數值的變化曲線，並提供互動式的開關操作。
+- **技術棧**：`React.js`, `Vite`, `Recharts`
 - **功能**：
-  - 定時循環讀取 SQLite 資料庫，繪製動態折線圖。
-  - 介面左側提供「啟動模擬器」與「啟動 ESP32」按鈕，讓您自由決定虛實數據寫入。
-
-### 2. (已移除) 獨立控制面板
-
-- **說明**：原先的靜態 `index.html` 已被全面整合至新的 React 儀表板，此元件已不再需要。
+  - 非同步定時刷新 (Poll) 後端 SQLite 資料庫數據，並以 `Recharts` 繪製動態折線圖。
+  - 具備「Software Simulator」與「ESP32 Hardware」兩組開關。兩者為**智慧互斥**狀態，啟動任意一方將會自動將另一方關閉，確保後端數據流單純安全。
+  - 即時反映目前最新的溫濕度與時間標記。
 
 ---
 

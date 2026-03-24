@@ -76,9 +76,10 @@ async def startup_event():
 @app.post("/api/simulator/on")
 def start_simulator():
     """啟動背景模擬器，每2秒產生一筆模擬溫濕度資料"""
-    global simulation_active
+    global simulation_active, esp32_active
+    esp32_active = False  # 自動關閉 ESP32
     simulation_active = True
-    return {"status": "success", "message": "Simulator started"}
+    return {"status": "success", "message": "Simulator started, ESP32 stopped"}
 
 @app.post("/api/simulator/off")
 def stop_simulator():
@@ -90,9 +91,10 @@ def stop_simulator():
 @app.post("/api/esp32/on")
 def start_esp32():
     """啟動真實硬體 ESP32 的資料接收"""
-    global esp32_active
+    global esp32_active, simulation_active
+    simulation_active = False  # 自動關閉模擬器
     esp32_active = True
-    return {"status": "success", "message": "ESP32 data reception started"}
+    return {"status": "success", "message": "ESP32 data reception started, Simulator stopped"}
 
 @app.post("/api/esp32/off")
 def stop_esp32():

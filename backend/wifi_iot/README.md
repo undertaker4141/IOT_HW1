@@ -51,9 +51,12 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 ## 📡 API Endpoints
 
+- **`/api/simulator/on` & `/api/simulator/off`**
+  - **用途**：啟動/關閉後端內建的虛擬溫濕度模擬迴圈。啟動時會自動互斥並切斷 ESP32 接收模式。
+- **`/api/esp32/on` & `/api/esp32/off`**
+  - **用途**：啟動/關閉真實硬體 ESP32 接收模式。啟動時會自動互斥並關閉模擬器。
 - **`POST /api/sensor`**
-  - 用途：接收來自 ESP32 的資料
-  - Payload 原型：`{"temp": 25.5, "humid": 60.0}`
-- **`GET /api/sensor`**
-  - 用途：透過瀏覽器快速查看最近收到的 10 筆資料 (測試用)
-  - 網址：`http://127.0.0.1:8000/api/sensor`
+  - **用途**：接收來自 Edge 端 (ESP32) 的溫濕度資料。(必須處於 `esp32_active`=True 的狀態才會受理)
+  - **Payload 原型**：`{"temp": 25.5, "humid": 60.0}`
+- **`GET /api/sensor?limit=50`**
+  - **用途**：取得資料庫中最新建立的指定筆數紀錄，供前端圖表即時繪製使用。
