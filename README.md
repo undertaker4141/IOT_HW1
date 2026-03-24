@@ -60,13 +60,11 @@ d:\IOT_HW1\
 - **技術棧**：Python 3.12, `Streamlit`, `Pandas`
 - **功能**：
   - 定時循環讀取 SQLite 資料庫，繪製動態折線圖。
-  - 介面左側提供側邊欄 (Sidebar)，加入「啟動模擬器」與「停止模擬器」按鈕，讓您自由決定是否由後端產生背景虛擬數據，達成在軟硬體之間無縫切換的完整控制。
+  - 介面左側提供「啟動模擬器」與「啟動 ESP32」按鈕，讓您自由決定虛實數據寫入。
 
-### 2. 獨立控制面板 (`frontend/index.html`)
+### 2. (已移除) 獨立控制面板
 
-- **用途**：免安裝環境的純網頁版替代控制台。
-- **技術棧**：原生 HTML, CSS, JavaScript (Fetch API)
-- **功能**：透過瀏覽器直接開啟檔案，即可連線後端 FastAPI 操控模擬器並獲取最新單筆資料。
+- **說明**：原先的靜態 `index.html` 已被全面整合至新的 React 儀表板，此元件已不再需要。
 
 ---
 
@@ -110,11 +108,10 @@ d:\IOT_HW1\
    python -m uvicorn main:app --host 0.0.0.0 --port 8000
    ```
 4. **啟動視覺化儀表板 (可選)**：
-   如果你想透過網頁看動態圖表或啟動軟體模擬器：
+   如果你想透過網頁看動態圖表或啟動軟體/硬體資料寫入開關：
    ```bash
    cd d:\IOT_HW1\frontend
-   pip install -r requirements.txt
-   python -m streamlit run app.py
+   npm run dev
    ```
 5. **設定並燒錄 ESP32 韌體 (若想測試真硬體)**：
    - 開啟 `edge/DHT11_WIFI/src/main.cpp`

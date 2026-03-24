@@ -40,6 +40,7 @@ def init_db():
     conn.commit()
     conn.close()
 
+esp32_active = True
 simulation_active = False
 
 async def simulation_loop():
@@ -86,9 +87,27 @@ def stop_simulator():
     simulation_active = False
     return {"status": "success", "message": "Simulator stopped"}
 
+@app.post("/api/esp32/on")
+def start_esp32():
+    """啟動真實硬體 ESP32 的資料接收"""
+    global esp32_active
+    esp32_active = True
+    return {"status": "success", "message": "ESP32 data reception started"}
+
+@app.post("/api/esp32/off")
+def stop_esp32():
+    """停止接收真實硬體 ESP32 的資料"""
+    global esp32_active
+    esp32_active = False
+    return {"status": "success", "message": "ESP32 data reception stopped"}
+
 @app.post("/api/sensor")
 def receive_sensor_data(data: SensorData):
     """接收來自 Edge 端 (ESP32) 的溫濕度資料並存入 SQLite"""
+    global esp32_active
+    if not esp32_active:
+        print("⏸️ Ignored ESP32 data: ESP32 switch is OFF.")
+        return {"status": "ignored", "message": "Switch is offline"}
     try:
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()

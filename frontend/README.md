@@ -1,39 +1,31 @@
-# 📊 AIoT 網頁控制與視覺化前端 (Frontend)
+# 📊 溫濕度即時監控儀表板 (React + Vite)
 
-本目錄包含整個 AIoT 專題的 Web 介面。它主要由兩個獨立的元件組成：提供控制模擬器開關的原生 HTML/JS 網頁，以及即時顯示溫濕度變化曲線的 Streamlit 儀表板。
+本目錄包含本專案的前端系統，使用 **React.js** 與 **Vite** 建置。提供一個現代化、深色風格的使用者介面，讓您可以動態即時檢視資料庫中的溫濕度數據，並且具備快速的功能開關。
 
-## 📁 目錄結構
+## ✨ 核心功能
 
-```text
-frontend/
-├── app.py              # Streamlit 即時視覺化儀表板程式
-├── index.html          # Web 控制面板：負責控制後端模擬器的啟停與最新資料查詢
-└── requirements.txt    # 執行 Streamlit 儀表板所需的 Python 依賴清單
-```
+1. **即時數據圖表化**：以互動式折線圖或儀表板呈現當下最新的溫濕度數據，支援動態資料流更新。
+2. **模擬器開關 (Simulator Toggle)**：透過操作頁面中的按鈕，直接呼叫後端 API (`/api/simulator/on` 與 `off`) 切換虛擬數據產生器的啟動與停止。
+3. **ESP32 接收模式開關**：開啟此按鈕後，後端將準備接收來自真實硬體 (如 NodeMCU-32S / WROOM-32 等 ESP32 開發板) 透過 API 端點所 POST 回來的 JSON 格式溫濕度數據。
 
-## ✨ 基本功能介紹
+## 📂 專案結構簡介
 
-### 1. Web 控制面板 (`index.html`)
-這是一個不需要安裝任何套件、直接用瀏覽器就能開啟的靜態網頁。它使用原生的 JavaScript (Fetch API) 與後端 FastAPI (`backend/wifi_iot/main.py`) 互動。
+- `src/App.jsx` (或相關首頁): 包含了應用程式的最核心 UI 佈局，負責與後端 FastAPI 伺服器進行 HTTP Request 溝通 (像是 `fetch` 呼叫資料與發送控制信號)。
+- `src/components/`: 自定義的 React 元件庫，確保介面風格高度重用性。
+- `vite.config.js`: Vite 伺服器與相關設定檔。
 
-- **功能重點**：
-  - **Start / Stop 按鈕**：呼叫後端的 `/api/simulator/on` 或 `/off`，讓後端開始在背景每兩秒自動產生隨機資料並寫入 SQLite 資料庫 (取代真的 ESP32 傳輸)。
-  - **最新資料顯示**：網頁會定時呼叫 `/api/sensor` 拉取資料庫中最新的一筆資料，驗證連線狀況。
-- **如何使用**：
-  - 先確保**後端 FastAPI 伺服器**已經啟動。
-  - 直接在檔案總管對 `index.html` 點兩下，或拖曳至瀏覽器中即可開啟。
+## 🚀 啟動方式
 
-### 2. 即時視覺化儀表板 (`app.py`)
-使用 Streamlit 框架打造的即時圖表介面。它會直接讀取後端資料夾下的 `aiotdb.db` 資料庫檔案，並且透過無窮迴圈定時刷新畫面。
+確保您已經在終端機中導覽至 `frontend` 目錄下：
 
-- **功能重點**：
-  - **動態折線圖**：自動繪製最新幾筆溫濕度資料的曲線圖。
-  - **最新指標 (Metrics)**：大字體顯示當前最新的溫度與濕度數值。
-  - **筆數控制**：提供拉桿，讓您可以動態調整圖表欲顯示的資料筆數 (例如只看最新的 50 筆或 100 筆)。
-- **如何使用**：
-  - 開啟終端機 (Terminal) 並切換到此 `frontend` 資料夾。
-  - 執行以下指令安裝依賴並啟動：
-    ```bash
-    pip install -r requirements.txt
-    python -m streamlit run app.py
-    ```
+1. **安裝依賴套件**:
+   ```bash
+   npm install
+   ```
+
+2. **啟動開發伺服器**:
+   ```bash
+   npm run dev
+   ```
+
+開啟瀏覽器並前往終端機所顯示的 URL (例如 `http://localhost:5173`)，即可開始體驗即時監控與控制功能！
