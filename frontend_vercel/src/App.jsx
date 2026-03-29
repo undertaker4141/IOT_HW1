@@ -20,7 +20,7 @@ function App() {
           // Keep the last 50 data points for the chart
           return newData.length > 50 ? newData.slice(newData.length - 50) : newData;
         });
-      }, 5000); // 5 seconds interval
+      }, 2000); // 2 seconds interval
     }
     return () => clearInterval(interval);
   }, [simActive]);
