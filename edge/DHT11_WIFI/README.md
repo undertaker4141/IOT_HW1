@@ -1,34 +1,24 @@
-# 📡 ESP32 DHT11 WiFi 傳送測試 (Edge 端)
+# 📡 ESP32 DHT11_WIFI 發送端 (Edge)
 
-> 透過手機熱點將 ESP32 連上網路，並讀取 DHT11 (GPIO 15) 的溫濕度數據，每隔 5 秒發送 HTTP POST 請求至你電腦運行的後端伺服器。
+> 透過手機熱點將 ESP32 聯上網路，負責採集溫濕度數據，對開發者筆電上的 FastAPI 伺服器發起 POST 請求。
 
-## 📁 專案結構
+## 🎯 專案特色與架構定位
+在我們規劃的「雙軌開發法」中，這裡扮演了**真實展示軌道**的資料來源。不使用模擬數值，100% 透過 GPIO 15 引腳讀取 DHT11 感測器物理電壓轉譯出的真實氣候資料。
 
-```
-edge/DHT11_WIFI/
-├── src/main.cpp            # 主程式：連接 WiFi、讀取 DHT11、發送 HTTP POST
-├── platformio.ini          # PlatformIO 設定 (含 DHT 依賴庫)
-└── README.md               # 本文件
-```
+## 🛠️ 開發與燒錄前準備 (極度重要！)
 
-## 🛠️ 開發前準備 (極度重要！)
+編譯韌體前，**你必須先於 `src/main.cpp` 修改好三行變數**：
 
-在編譯與燒錄韌體之前，你**必須**先修改 `src/main.cpp` 頂部的三個設定值：
+1. **`ssid`**: 必須符合你目前手機開啟的熱點名稱。
+2. **`password`**: 你手機熱點的連線密碼。
+3. **`serverUrl`**: 這個最常被搞錯。你必須先使用電腦連上該手機熱點，並在終端機輸入 `ipconfig` (Windows) 查閱目前發配給這台筆電的 `IPv4 位址`。假設為 192.168.43.100，則須填寫為：
+   `const char* serverUrl = "http://192.168.43.100:8000/api/sensor";`
 
-1. **`ssid`**: 你的手機熱點名稱 (WiFi Name)
-2. **`password`**: 你的手機熱點密碼
-3. **`serverUrl`**: 你電腦後端伺服器的 IP 地址與 API 路徑
-   - 手機開啟熱點，讓電腦與 ESP32 連上**同一個熱點**。
-   - 在電腦終端機輸入 `ipconfig`，找到該網路的 `IPv4 位址`。
-   - 假設拿到 `192.168.43.100`，則將連結改為：`"http://192.168.43.100:8000/api/sensor"`。
+## 🚀 測試步驟 (Phase 2)
 
-## 🚀 測試步驟
-
-1. **啟動後端**
-   - 先依照 `backend/wifi_iot/README.md` 的指示啟動 fastapi 伺服器。
-2. **修改與燒錄韌體**
-   - 確認 `main.cpp` 的 SSID、密碼與 IP 都填寫無誤。
-   - 在 PlatformIO 點擊 **"Upload"** 燒錄至 ESP32。
-3. **觀察輸出**
-   - 開啟 PlatformIO **Serial Monitor** (115200 baud) 觀察連接狀況與發送日誌。
-   - 觀察後端終端機是否印出 `✅ Received and Saved...`，代表串接成功！
+我們通常以這套流程來擷取開發紀錄 (Development Log) 中的火力展示：
+1. 開啟手機熱點 (確保電腦與 ESP32 皆可以連上)。
+2. 先開啟你的 FastAPI 伺服器 (確保 `backend/wifi_iot/` 正在運行)。
+3. 在 VS Code 的 PlatformIO 點擊 **"Upload"** 把編譯過的韌體燒入 ESP32。
+4. 打開 PlatformIO **Serial Monitor** (115200 baud)。
+5. 這時候除了能看到 ESP32 把溫濕度打印出來，同時看到伺服器回傳 `Code: 200` 等回應，就能確信資料已真實流進你的電腦 SQLite！此時開啟 `frontend` 頁面即可看到剛出爐的數值跳動。

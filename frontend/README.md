@@ -1,31 +1,26 @@
-# 📊 溫濕度即時監控儀表板 (React + Vite)
+# 🏠 Frontend (Local 全功能版)
 
-本目錄包含本專案的前端系統，使用 **React.js** 與 **Vite** 建置。提供一個現代化、深色風格的使用者介面，讓您可以動態即時檢視資料庫中的溫濕度數據，並且具備快速的功能開關。
+> **這是能夠銜接本地 FastAPI 伺服器、監看 ESP32 真實硬體數據的「正規全能 Dashboard」！**
 
-## ✨ 核心功能
+## 🎯 專案特色與用途
+為了展示「真實硬體」以及後端 (FastAPI + SQLite) 的連動火力，這個版本的 React App 負責擔綱我們於個人筆電上的監控台。
+- **真實資料輪詢 (Polling)**：每兩秒便使用 `fetch` 輪詢後端 `localhost:8000`，即時反饋包含真實歷史資料的折線圖 (`Recharts`)。
+- **軟硬體智慧互斥按鈕**：介面上設計有【Software Simulator】與【ESP32 Hardware】這兩組互斥啟動按鈕。只要你在此操作介面中指令啟動硬體連線，後端與前端就會自動暫停一切模擬行為，專心等待。
 
-1. **即時數據圖表化**：以互動式折線圖或儀表板呈現當下最新的溫濕度數據，支援動態資料流更新。
-2. **自動互斥雙模式開關 (Auto Toggle)**：具備「模擬器」與「ESP32 硬體」兩種互斥狀態開關。啟動其中一方時，前端 UI 與後端系統會立即自動把另一方切換至 OFF，維護最乾淨的來源狀態。
-3. **ESP32 硬體接收模式**：開啟此按鈕後，儀表板與後端將進入就緒狀態，並開始顯示來自真實 NodeMCU-32S / WROOM-32 等 ESP32 傳輸的數據。
+## 🚀 使用指南
 
-## 📂 專案結構簡介
+### 1. 背景條件
+你必須事先啟動後端的 API 伺服器與資料庫，否則此網頁將無法運作 (報錯網路無法連線)。
+- 進入 `backend/wifi_iot/` 資料夾，執行 FastAPI (`uv run -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload`)。
 
-- `src/App.jsx` (或相關首頁): 包含了應用程式的最核心 UI 佈局，負責與後端 FastAPI 伺服器進行 HTTP Request 溝通 (像是 `fetch` 呼叫資料與發送控制信號)。
-- `src/components/`: 自定義的 React 元件庫，確保介面風格高度重用性。
-- `vite.config.js`: Vite 伺服器與相關設定檔。
+### 2. 開啟儀表板
+```bash
+cd frontend
+npm install
+npm run dev
+```
+點擊終端機內 Vite 提供的 local URL (通常是 `http://localhost:5173`)。
 
-## 🚀 啟動方式
-
-確保您已經在終端機中導覽至 `frontend` 目錄下：
-
-1. **安裝依賴套件**:
-   ```bash
-   npm install
-   ```
-
-2. **啟動開發伺服器**:
-   ```bash
-   npm run dev
-   ```
-
-開啟瀏覽器並前往終端機所顯示的 URL (例如 `http://localhost:5173`)，即可開始體驗即時監控與控制功能！
+### 3. 操作模式
+- 當你想測試後端，尚未開啟 ESP32 之前，可先開啟 **Software Simulator ON**，觀察 SQLite 寫入與折線圖更新是否順利。
+- 當你幫 ESP32 上電後，請先切換回 **ESP32 Hardware ON**。你會看見圖表開始接收來自 `edge/DHT11_WIFI` 回傳的真實物理溫濕度數值！

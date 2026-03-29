@@ -1,8 +1,10 @@
 # 🌐 AIoT 溫濕度感測與 WiFi 串接專題 (ESP32)
 
-本專案是一個完整的物聯網 (IoT) 實作測試，涵蓋了邊緣裝置 (Edge) 的硬體控制、感測器讀取，以及後端 (Backend) 的 API 接收與資料庫儲存。
+本專案是一個完整的物聯網 (IoT) 實作專題，旨在達成「即時擷取邊緣端感測資料並於本地/雲端展示」。
+為因應硬體展示需求與 Live Demo (Vercel) 雲端部署，本專案採用 **「雙軌獨立法」** 進行開發：
 
-整個專案架構分為 `edge/` (ESP32 硬體端) 與 `backend/` (伺服器端) 兩大部分。
+- **軌道一：地端真實硬體展示** (`edge/` + `backend/` + `frontend/`)：透過 ESP32 與本地 API 配合，確保真實感測器數據寫入資料庫，以火力展示完整系統。
+- **軌道二：雲端純前端展示** (`frontend_vercel/`)：抽離後端 API 依賴，以輕量的 React 原生模擬器在瀏覽器中展示動態儀表板，專司 Vercel Live Demo，滿足雲端存取需求。
 
 ---
 
@@ -11,113 +13,50 @@
 ```
 d:\IOT_HW1\
 ├── .agent/              # AI 代理人 Skill 設定區 (task_logger)
-├── backend/             # 後端伺服器與資料庫測試區 (Python)
+├── frontend_vercel/     # 【雲端軌道】專為 Vercel 打造的純前端模擬 Live Demo (無資料庫依賴)
+├── frontend/            # 【地端軌道】銜接本地 FastAPI 與真實 ESP32 數據的全功能 Dashboard
+├── backend/             # 後端伺服器與資料庫專案區 (Python / uv)
 │   ├── mock_db/         # 產生模擬 SQLite 測試資料的專案
-│   └── wifi_iot/        # 接收真實或模擬數據的 FastAPI 伺服器
-├── frontend/            # 網頁控制與視覺化儀表板 (React + Vite)
-│   ├── src/             # React 組件與主程式邏輯
-│   └── package.json     # Node.js 依賴設定檔
+│   └── wifi_iot/        # 接收 ESP32 上傳真實數據的 FastAPI 伺服器
 ├── edge/                # 邊緣運算硬體專案區 (C++ / PlatformIO)
-│   ├── DHT11/           # 【測試一】單純讀取 DHT11 溫濕度並印在 Serial
-│   ├── DHT11_WIFI/      # 【正式串接】讀取 DHT11 溫濕度並透過 WiFi POST 到後端
-│   └── LED/             # 【基礎測試】ESP32 內建 LED 閃爍測試
-├── 任務紀錄.md            # AI 執行每次指令的自動紀錄檔
-└── README.md            # 本專案總體說明文件 (你正在閱讀的文件)
+│   ├── DHT11/           # 單純讀取 DHT11 溫濕度並印在 Serial
+│   ├── DHT11_WIFI/      # 【正式串接】讀取 DHT11 溫濕度並透過 WiFi POST 到本地後端
+│   └── LED/             # 基礎測試 ESP32 內建 LED
+├── 任務紀錄.md            # 開發日誌 (Development Log) 自動紀錄檔
+└── README.md            # 本專案總體說明文件
 ```
 
 ---
 
-## 🖥️ 後端專案 (Backend)
+## 🖥️ 子系統一覽與說明
 
-後端使用標準的 Python 工具 `pip` 建立虛擬環境與管理依賴。
+### 1. 視覺化儀表板 (Frontend)
+- **`frontend_vercel/` (雲端 Live Demo 版)**: 
+  使用 React + Vite 建構。此版本**不具備任何後端呼叫或硬體連接功能**，依賴前端 `setInterval` 產生定時隨機的溫濕度數據。部署於 Vercel，用於提供外界可隨意訪問且極具動態感的雲端模擬儀表板。
+- **`frontend/` (地端全功能版)**: 
+  使用 React + Vite 建構。負責輪詢 (Polling) 本地 FastAPI 伺服器，呈現「透過真實 ESP32 開發板」或是「本地軟體模擬器」寫入 SQLite 資料庫的溫濕度資料。
 
-### 1. `backend/mock_db` (模擬資料庫測試)
+### 2. 應用程式介面與資料庫 (Backend)
+- **`backend/wifi_iot/`**: 輕量級 FastAPI 應用程式，專門接收 ESP32 發來的 `/api/sensor` HTTP POST 請求。所有收到的溫濕度均寫入本機 `aiotdb.db` SQLite 資料庫中；同時也提供 API 讓 `frontend/` 讀取資料或控制內部軟體模擬器。
 
-- **用途**：在真實硬體串接前，確認 SQLite 資料庫的 Schema 與基本寫入功能。
-- **技術棧**：Python 3.12 內建 `sqlite3`
-- **核心檔案**：`generate_mock_data.py`
-- **功能**：自動建立 `aiotdb.db` 並產生 50 筆模擬的 DHT11 溫濕度數據，支援時間戳記。
-
-### 2. `backend/wifi_iot` (正式 API 伺服器)
-
-- **用途**：作為真實的後端伺服器，接收來自 ESP32 的 HTTP POST 請求。
-- **技術棧**：Python 3.12, `FastAPI`, `Uvicorn`, `sqlite3`
-- **核心檔案**：`main.py`
-- **功能**：
-  - 提供 `/api/simulator/on` 與 `/off` 供前端網頁控制背景資料產生器。
-  - 將數據寫入同目錄下的 `aiotdb.db` 資料庫 (`sensor_data` 表)。
-  - 提供 `/api/sensor` (GET) Endpoint 供瀏覽器快速預覽近期數據。
+### 3. 微控制器硬體端 (Edge)
+- **`edge/DHT11_WIFI/`**: 基於 PlatformIO 開發，硬體支援 ESP32 (`denky32`)。在提供正確的手機熱點 `ssid` 與 本地電腦端 API IP (如 `192.168.x.x:8000`) 的情況下，定期於 GPIO 15 收集 DHT11 感測數值，以 WiFi POST 向伺服器遞交。
 
 ---
 
-## 📊 前端專案 (Frontend)
+## 🚀 執行與測試指南 (雙軌)
 
-為了方便在沒有硬體連線時進行系統前後端串接測試，以及即時監控數據，專案全面採用了現代化的 Frontend 框架進行了重構。
+### 軌道一：部署 Vercel Live Demo
+如果你只需觀看雲端模擬版本：
+1. 進入 `frontend_vercel/`。
+2. 將其存放庫綁定 Vercel 並進行標準 React 部署。
+3. 存取 Vercel 提供網址，即刻看到充滿科技感的數據跳動。
 
-### 1. 溫濕度即時監控儀表板 (React + Vite)
-
-- **用途**：透過瀏覽器即時監控溫濕度數值的變化曲線，並提供互動式的開關操作。
-- **技術棧**：`React.js`, `Vite`, `Recharts`
-- **功能**：
-  - 非同步定時刷新 (Poll) 後端 SQLite 資料庫數據，並以 `Recharts` 繪製動態折線圖。
-  - 具備「Software Simulator」與「ESP32 Hardware」兩組開關。兩者為**智慧互斥**狀態，啟動任意一方將會自動將另一方關閉，確保後端數據流單純安全。
-  - 即時反映目前最新的溫濕度與時間標記。
-
----
-
-## 📡 邊緣端專案 (Edge)
-
-硬體端使用 VS Code 的 **PlatformIO** 擴充套件進行開發，目標板為 **ESP32 WROOM-32 (`denky32`)**。
-
-### 1. `edge/LED` (GPIO 基礎測試)
-
-- **用途**：驗證 ESP32 開發板與 PlatformIO 環境是否正常運作。
-- **功能**：控制 GPIO 2 內建 LED 每 500ms 閃爍一次，並透過 Serial 監視器 (115200) 輸出狀態。
-
-### 2. `edge/DHT11` (感測器讀取測試)
-
-- **用途**：驗證 DHT11 溫濕度感測器的接線與庫函數是否正常。
-- **依賴庫**：`adafruit/DHT sensor library`
-- **功能**：透過 GPIO 15 定期讀取 DHT11 的溫度、濕度、體感溫度，並顯示於 Serial 監視器。具備自動錯誤偵測。
-
-### 3. `edge/DHT11_WIFI` (軟硬體串接整合)
-
-- **用途**：**本專題的最終整合**。將讀取到的物理數據傳送至網路上的自建伺服器。
-- **依賴庫**：`WiFi.h`, `HTTPClient.h`, `adafruit/DHT sensor library`
-- **功能**：
-  - 連接使用者指定的手機 WiFi 熱點。
-  - 每 5 秒讀取一次 DHT11 溫濕度 (GPIO 15)。
-  - 將數據包裝成 JSON 格式 (`{"temp": 25.0, "humid": 50.0}`)。
-  - 透過 HTTP POST 發送給位於同一個 WiFi 網域下的 FastAPI 電腦伺服器。
+### 軌道二：執行地端真實硬體測試
+若需親自驗證感測器連線：
+1. **啟動後端：** 執行 `uv run -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload` (位於 `backend/wifi_iot/`)。請利用 `ipconfig` 找出該台電腦分配到的手機熱點區網 IP 位址。
+2. **啟動前端：** 執行 `npm run dev` (位於 `frontend/`) 查看本機 Dashboard。
+3. **燒入韌體：** 開啟 `edge/DHT11_WIFI/src/main.cpp`，填寫正確的 WiFi 憑證與電腦 API 位址。燒錄成功後觀察 ESP32 的 Serial Monitor 輸出即可。
 
 ---
-
-## 🚀 系統整合執行流程
-
-要完整重現從硬體到資料庫的資料流，請依下列步驟進行：
-
-1. **開啟手機 WiFi 熱點**，讓你的電腦與 ESP32 皆準備連接此熱點。
-2. **找出電腦 IP**：在電腦開啟終端機，執行 `ipconfig`，記下 IPv4 位址 (例如 `192.168.43.x`)。
-3. **啟動後端伺服器**：
-   ```bash
-   cd d:\IOT_HW1\backend\wifi_iot
-   pip install -r requirements.txt
-   python -m uvicorn main:app --host 0.0.0.0 --port 8000
-   ```
-4. **啟動視覺化儀表板 (可選)**：
-   如果你想透過網頁看動態圖表或啟動軟體/硬體資料寫入開關：
-   ```bash
-   cd d:\IOT_HW1\frontend
-   npm run dev
-   ```
-5. **設定並燒錄 ESP32 韌體 (若想測試真硬體)**：
-   - 開啟 `edge/DHT11_WIFI/src/main.cpp`
-   - 修改 `ssid` 為手機熱點名稱、`password` 為熱點密碼。
-   - 修改 `serverUrl` 為步驟 2 拿到的 IP (如 `"http://192.168.43.x:8000/api/sensor"`)。
-   - 使用 PlatformIO 進行 **Build & Upload**。
-6. **觀察結果**：
-   - ESP32 連上線後，或者您在 Streamlit 按下「Start Simulator」後，後端的終端機與前端網頁儀表板皆會同步更新最新的溫濕度！
-
----
-
-_詳細的使用與環境設定，請參考各別目錄下的 `README.md` 指南。_
+_詳細的使用與環境設定，請參考各專案下的 `README.md` 指南。_
